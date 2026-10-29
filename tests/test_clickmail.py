@@ -112,8 +112,8 @@ async def test_send_failure_is_reported_not_raised(api):
 
 async def test_reads_replies_and_moves_the_marker_only_on_confirm(api):
     api.inbound = [{
-        "id": "in_1", "from": {"email": "Lead@Prospect.example", "name": "Lead"},
-        "subject": "Re: Hola", "text": "Me interesa", "messageId": "<r1@prospect.example>",
+        "id": "in_1", "fromEmail": "Lead@Prospect.example", "fromName": "Lead",
+        "subject": "Re: Hola", "text": "Me interesa", "messageIdHeader": "<r1@prospect.example>",
         "inReplyToEmailId": "email_1", "receivedAt": "2030-01-01T10:00:00.000Z",
     }]
     p = provider(api)

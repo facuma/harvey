@@ -257,7 +257,7 @@ class ClickMailProvider(MailProvider):
         if not body:
             import re
             body = re.sub(r"<[^>]+>", " ", str(_pick(d, "html", "htmlBody")))
-        message_id = str(_pick(d, "messageId", "message_id")).strip()
+        message_id = str(_pick(d, "messageIdHeader", "messageId", "message_id")).strip()
         # The ClickMail id of the email this answers matches Harvey's outbox
         # (that's the message_id send_email returned); else the raw header.
         in_reply_to = str(_pick(d, "inReplyToEmailId", "in_reply_to_email_id",
