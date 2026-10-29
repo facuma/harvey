@@ -639,6 +639,7 @@ class EnvConfig(BaseModel):
     # ClickMail (channels.email.provider: clickmail)
     clickmail_api_key: str = ""
     clickmail_base_url: str = ""
+    clickmail_domain: str = ""
     # Microsoft 365 (channels.email.provider: microsoft)
     m365_client_id: str = ""
     m365_tenant_id: str = ""
@@ -758,6 +759,7 @@ def load_env() -> EnvConfig:
         imap_password=os.getenv("IMAP_PASSWORD", "").strip(),
         clickmail_api_key=os.getenv("CLICKMAIL_API_KEY", "").strip(),
         clickmail_base_url=os.getenv("CLICKMAIL_BASE_URL", "").strip(),
+        clickmail_domain=os.getenv("CLICKMAIL_DOMAIN", "").strip(),
         m365_client_id=os.getenv("M365_CLIENT_ID", "").strip(),
         m365_tenant_id=os.getenv("M365_TENANT_ID", "").strip(),
         precleared_api_key=os.getenv("PRECLEARED_API_KEY", "").strip(),

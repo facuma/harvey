@@ -184,6 +184,41 @@ async def test_test_connection_checks_the_sender(api):
     assert not ok and "not a sender" in detail
 
 
+class LockedEnv(Env):
+    clickmail_domain = "Sender.example"
+
+
+class OtherDomainEnv(Env):
+    clickmail_domain = "other.example"
+
+
+async def test_domain_lock_allows_its_own_domain(api):
+    p = ClickMailProvider(Config(), LockedEnv(), transport=httpx.MockTransport(api))
+    assert (await p.send_email("lead@prospect.example", "Hola", "x")).ok
+    assert (await p.test_connection())[0]
+
+
+async def test_domain_lock_refuses_another_domain(api):
+    p = ClickMailProvider(Config(), OtherDomainEnv(), transport=httpx.MockTransport(api))
+    result = await p.send_email("lead@prospect.example", "Hola", "x")
+    assert not result.ok and "other.example" in result.error
+    assert api.sent == 0
+    with pytest.raises(ClickMailError):
+        await p.get_replies()
+    assert not (await p.test_connection())[0]
+
+
+async def test_mail_to_other_mailboxes_of_the_project_is_skipped(api):
+    api.inbound = [
+        {"id": "in_a", "fromEmail": "a@prospect.example", "toEmails": ["ana@sender.example"],
+         "subject": "Re: Hola", "text": "Sí"},
+        {"id": "in_b", "fromEmail": "b@prospect.example", "toEmails": ["support@sender.example"],
+         "subject": "Ayuda", "text": "Otro buzón"},
+    ]
+    replies = await provider(api).get_replies()
+    assert [m.from_email for m in replies] == ["a@prospect.example"]
+
+
 async def test_factory_builds_clickmail():
     from harvey.integrations.mail_provider import NATIVE_PROVIDERS, get_mail_provider
 

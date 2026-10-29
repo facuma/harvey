@@ -7,6 +7,9 @@ receives mail for the verified domain through SES receipt rules.
 .env:
     CLICKMAIL_API_KEY=     a project key with emails:send, inbound:read
     CLICKMAIL_BASE_URL=    the instance's API root, e.g. https://clickmail.example.com
+    CLICKMAIL_DOMAIN=      optional: the only domain Harvey may send from and
+                           read; anything else is refused (for a key whose
+                           project also holds other domains)
 
 The sending domain must be verified in the ClickMail project, the persona
 email registered as an active sender, and inbound enabled with that address
@@ -133,6 +136,7 @@ class ClickMailProvider(MailProvider):
         self.api_key = getattr(env, "clickmail_api_key", "")
         base = (getattr(env, "clickmail_base_url", "") or "").rstrip("/")
         self.base_url = base[:-3] if base.endswith("/v1") else base
+        self.domain = (getattr(env, "clickmail_domain", "") or "").strip().lower()
         self._transport = transport  # httpx.MockTransport in tests
         # Where the last confirmed inbound read ended; None reads the week.
         self._read_after: datetime | None = None
@@ -148,6 +152,13 @@ class ClickMailProvider(MailProvider):
 
     def is_configured(self) -> bool:
         return bool(self.api_key and self.base_url and self._sender()[1])
+
+    def _domain_problem(self) -> str:
+        """Why the persona email is outside CLICKMAIL_DOMAIN, or ""."""
+        address = self._sender()[1].lower()
+        if self.domain and address.rsplit("@", 1)[-1] != self.domain:
+            return f"{address or 'persona.email'} is not on {self.domain} (CLICKMAIL_DOMAIN)"
+        return ""
 
     async def _request(self, method: str, path: str, **kwargs):
         headers = {"Authorization": f"Bearer {self.api_key}", **kwargs.pop("headers", {})}
@@ -173,6 +184,9 @@ class ClickMailProvider(MailProvider):
         thread_ref: str = "",
         in_reply_to: str = "",
     ) -> SendResult:
+        problem = self._domain_problem()
+        if problem:
+            return SendResult(ok=False, error=problem)
         name, address = self._sender()
         payload = {
             "from": f"{name} <{address}>" if name else address,
@@ -210,6 +224,9 @@ class ClickMailProvider(MailProvider):
         """Replies received since the last confirmed read, then bounces and
         complaints among recently sent emails. Raises ClickMailError when
         ClickMail can't be read, so the Handler holds sending."""
+        problem = self._domain_problem()
+        if problem:
+            raise ClickMailError(problem)
         out = await self._read_inbound(limit)
         out.extend(await self._read_bounces())
         return out
@@ -236,6 +253,9 @@ class ClickMailProvider(MailProvider):
                 continue
             if str(item.get("status", "")).upper() == "REJECTED":
                 continue  # failed SES virus scanning; never shown
+            to = [_address(t) for t in item.get("toEmails") or []]
+            if to and mailbox.lower() not in to:
+                continue  # another mailbox of the project; not Harvey's
             received = _parse_time(_pick(item, "receivedAt", "received_at", "createdAt"))
             if received and received > newest:
                 newest = received
@@ -326,6 +346,8 @@ class ClickMailProvider(MailProvider):
         name, address = self._sender()
         if not address:
             return False, "persona.email is empty in harvey.yaml"
+        if self._domain_problem():
+            return False, self._domain_problem()
         try:
             senders = _items(await self._request("GET", "/senders"))
             await self._request("GET", "/inbound", params={"limit": 1})
