@@ -378,7 +378,8 @@ DEFAULT_OPT_OUT_LINE = 'Not interested? Reply "no thanks" and I won\'t email aga
 OPT_OUT_WORDS = ("no thanks", "no thank you", "unsubscribe", "stop", "remove me",
                  "opt out")
 _ASKS_FOR_OPT_OUT_RE = re.compile(
-    r"\breply(?:\s+with)?\s*[\"'\u201c\u2018]?\s*(?:"
+    # English "reply", or Spanish "respond\u00e9"/"respondeme"/"responde".
+    r"\b(?:reply|respond[e\u00e9](?:me)?)(?:\s+(?:with|con))?\s*[\"'\u201c\u2018]?\s*(?:"
     + "|".join(re.escape(w) for w in OPT_OUT_WORDS) + r")\b", re.IGNORECASE)
 
 
@@ -635,6 +636,9 @@ class EnvConfig(BaseModel):
     imap_port: int = 993
     imap_username: str = ""
     imap_password: str = ""
+    # ClickMail (channels.email.provider: clickmail)
+    clickmail_api_key: str = ""
+    clickmail_base_url: str = ""
     # Microsoft 365 (channels.email.provider: microsoft)
     m365_client_id: str = ""
     m365_tenant_id: str = ""
@@ -752,6 +756,8 @@ def load_env() -> EnvConfig:
         imap_port=int(os.getenv("IMAP_PORT", "993").strip() or 993),
         imap_username=os.getenv("IMAP_USERNAME", "").strip(),
         imap_password=os.getenv("IMAP_PASSWORD", "").strip(),
+        clickmail_api_key=os.getenv("CLICKMAIL_API_KEY", "").strip(),
+        clickmail_base_url=os.getenv("CLICKMAIL_BASE_URL", "").strip(),
         m365_client_id=os.getenv("M365_CLIENT_ID", "").strip(),
         m365_tenant_id=os.getenv("M365_TENANT_ID", "").strip(),
         precleared_api_key=os.getenv("PRECLEARED_API_KEY", "").strip(),

@@ -470,6 +470,19 @@ def cmd_microsoft(args):
         asyncio.run(_test())
 
 
+def cmd_clickmail(args):
+    """ClickMail provider utilities (test)."""
+    from harvey.config import load_config, load_env
+    from harvey.integrations.clickmail import ClickMailProvider
+
+    async def _test():
+        provider = ClickMailProvider(load_config(), load_env())
+        ok, detail = await provider.test_connection()
+        print(f"\n  {'✓' if ok else '✗'} {detail}\n")
+        sys.exit(0 if ok else 1)
+    asyncio.run(_test())
+
+
 def cmd_outbox(args):
     """Review and approve queued outgoing emails."""
     from harvey.state import StateManager
@@ -1031,6 +1044,12 @@ def main():
     sub.add_argument("microsoft_action", choices=["auth", "test"],
                      help="auth: one-time sign-in; test: verify connection")
     sub.set_defaults(func=cmd_microsoft)
+
+    # harvey clickmail test
+    sub = subparsers.add_parser("clickmail", help="ClickMail provider setup")
+    sub.add_argument("clickmail_action", choices=["test"],
+                     help="test: verify the key, the sender and inbound access")
+    sub.set_defaults(func=cmd_clickmail)
 
     # harvey outbox
     sub = subparsers.add_parser("outbox", help="Review/approve queued emails")

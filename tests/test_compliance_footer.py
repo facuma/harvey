@@ -385,6 +385,9 @@ def test_opt_out_line_must_be_recognisable_and_link_free():
         with pytest.raises(pydantic.ValidationError):
             ComplianceConfig(opt_out_line=bad)
     assert ComplianceConfig(opt_out_line="Reply STOP to opt out.").opt_out_line
+    assert ComplianceConfig(opt_out_line="¿No te interesa? Respondé STOP.").opt_out_line
+    with pytest.raises(pydantic.ValidationError):
+        ComplianceConfig(opt_out_line='Respondé "no, gracias".')  # not a recognised word
     assert ComplianceConfig(opt_out_line="").opt_out_line == ""
     # Left blank in YAML (null) means empty, not a crash.
     assert ComplianceConfig(postal_address=None, opt_out_line=None).opt_out_line == ""

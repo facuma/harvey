@@ -10,6 +10,8 @@ thread. Two native providers ship:
   (OAuth; Exchange Online no longer accepts passwords over IMAP).
 - ``smtp``   — any mailbox that speaks SMTP + IMAP (AgentMail, Fastmail,
   a Workspace app-mailbox, self-hosted). Configuration via .env.
+- ``clickmail`` — the ClickMail REST API on Amazon SES (send + inbound
+  store). Configuration via .env.
 
 ``instantly`` remains supported through the legacy Sender/Handler path —
 it isn't a MailProvider because Instantly owns sequencing/sending itself.
@@ -22,7 +24,7 @@ from dataclasses import dataclass, field
 
 logger = logging.getLogger("harvey.mail")
 
-NATIVE_PROVIDERS = ("gmail", "smtp", "microsoft")
+NATIVE_PROVIDERS = ("gmail", "smtp", "microsoft", "clickmail")
 
 
 @dataclass
@@ -159,4 +161,7 @@ def get_mail_provider(config, env) -> MailProvider | None:
     if provider == "microsoft":
         from harvey.integrations.microsoft import MicrosoftProvider
         return MicrosoftProvider(config, env)
+    if provider == "clickmail":
+        from harvey.integrations.clickmail import ClickMailProvider
+        return ClickMailProvider(config, env)
     return None

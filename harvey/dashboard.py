@@ -225,6 +225,10 @@ async def get_setup_status():
     elif provider == "smtp":
         provider_done = _has("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD")
         provider_help = "Enter your SMTP host, username, and password in Settings."
+    elif provider == "clickmail":
+        provider_done = _has("CLICKMAIL_API_KEY", "CLICKMAIL_BASE_URL")
+        provider_help = ("Put CLICKMAIL_API_KEY and CLICKMAIL_BASE_URL in .env, then run "
+                         "'harvey clickmail test' in your terminal.")
     else:
         instantly_key = env_vars.get("INSTANTLY_API_KEY", "") or os.getenv("INSTANTLY_API_KEY", "")
         provider_done = bool(instantly_key) and instantly_key != "your_instantly_api_key_here"
